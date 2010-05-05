@@ -7,11 +7,8 @@ module Spec
       attr_accessor :ordered_active_record_classes
       attr_accessor :table_name_set
 
-      # Kill kill kill all the fixtures. Fixtures are evil, they must die.
-      # Use introspection on the db tables to run delete_all on each class. 
-      # Note that models that don't use the Railsy pluralized table names will break this pattern.
-      # We keep alternating the order of the tables that we scrub until all tables are wiped, in order to circumnavigate FK constraints. 
-      # Worst case is that we try each table i.e. O(n^2), but this is still way faster than using destroy_all.
+      # iterate over all ActiveRecord models associated with db tables, deleting all rows
+      # if we're inside a transaction, use delete, otherwise use truncate
       def unload_all_fixtures() 
         if ordered_active_record_classes.nil? || ordered_active_record_classes.empty?
           Spec::Scenarios::ordered_active_record_classes = ActiveRecord::Base.connection.tables.map {|t| 
