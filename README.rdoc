@@ -1,6 +1,12 @@
 = activerecord_unload_all_fixtures
 
-Description goes here.
+deletes all rows in all tables associated with active record models
+
+ ActiveRecord::
+
+== Install
+
+ gem install activerecord_unload_all_fixtures
 
 == Note on Patches/Pull Requests
  
@@ -14,4 +20,4 @@ Description goes here.
 
 == Copyright
 
-Copyright (c) 2010 mccraig mccraig of the clan mccraig. See LICENSE for details.
+Copyright (c) 2010 Trampoline Systems Ltd. See LICENSE for details.

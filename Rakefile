@@ -8,7 +8,7 @@ begin
     gem.summary = %Q{remove fixtures associated with ActiveRecord models}
     gem.description = %Q{remove all fixtures associated with activerecord models}
     gem.email = "mccraigmccraig@googlemail.com"
-    gem.homepage = "http://github.com/mccraigmccraig/activerecord_unload_all_fixtures"
+    gem.homepage = "http://github.com/trampoline/activerecord_unload_all_fixtures"
     gem.authors = ["mccraig mccraig of the clan mccraig"]
     gem.add_development_dependency "rspec", ">= 1.2.9"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
