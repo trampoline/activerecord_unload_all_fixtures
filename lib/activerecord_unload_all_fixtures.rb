@@ -31,7 +31,7 @@ module Spec
         processed = []
         classes.each_with_index{ |c,i|
           if defined?(ActiveRecord::WormTable) && c.ancestors.include?(ActiveRecord::WormTable)
-            tables = [c.switch_table_name,c.table_version_names]
+            tables = [c.switch_table_name] + c.table_version_names
           else
             tables = [c.table_name]
           end
