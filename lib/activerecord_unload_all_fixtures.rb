@@ -11,13 +11,7 @@ module Spec
       # if we're inside a transaction, use delete, otherwise use truncate
       def unload_all_fixtures() 
         if ordered_active_record_classes.nil? || ordered_active_record_classes.empty?
-          Spec::Scenarios::ordered_active_record_classes = ActiveRecord::Base.connection.tables.map {|t| 
-            t.downcase.singularize.camelize.constantize rescue nil
-          }.compact.select {|cls| cls.ancestors.include?(ActiveRecord::Base)}
-
-          # offline lock causes problems when running specs in jruby
-          # (offline lock table will get locked, so insert lock from other thread will block)
-          Spec::Scenarios::ordered_active_record_classes -= [ 'OfflineLock'.constantize ] if RUBY_PLATFORM =~ /java/
+          Spec::Scenarios::ordered_active_record_classes = ActiveRecord::Base.send(:subclasses).reject{ |klass| klass.skip_unload_fixtures? if klass.respond_to?(:skip_unload_fixtures?) }
         end
         
         Spec::Scenarios::table_name_set = ActiveRecord::Base::connection.tables.to_set
