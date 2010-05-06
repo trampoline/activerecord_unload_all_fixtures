@@ -2,7 +2,15 @@
 
 deletes all rows in all tables associated with active record models
 
- ActiveRecord::
+ ActiveRecord::UnloadAllFixtures::unload_all_fixtures
+
+if you have some models you don't want to be mercilessly deleted, mark them with a "skip_unload_fixtures"
+attribute on the model Class
+
+ class Foo < ActiveRecord::Base
+   class << self ; attr_accessor :skip_unload_fixtures ; end
+   Foo::skip_unload_fixtures = true
+ end
 
 == Install
 
