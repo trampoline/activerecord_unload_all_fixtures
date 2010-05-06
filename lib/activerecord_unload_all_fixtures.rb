@@ -1,53 +1,103 @@
 require 'set'
 
-module Spec
-  module Scenarios
+module ActiveRecord
+  module UnloadAllFixtures
 
     class << self
-      attr_accessor :ordered_active_record_classes
+      attr_accessor :ordered_active_record_table_names
       attr_accessor :table_name_set
 
       # iterate over all ActiveRecord models associated with db tables, deleting all rows
       # if we're inside a transaction, use delete, otherwise use truncate
       def unload_all_fixtures() 
-        if ordered_active_record_classes.nil? || ordered_active_record_classes.empty?
-          Spec::Scenarios::ordered_active_record_classes = ActiveRecord::Base.send(:subclasses).reject{ |klass| klass.skip_unload_fixtures if klass.respond_to?(:skip_unload_fixtures) }
+        if ActiveRecord::UnloadAllFixtures::ordered_active_record_table_names.nil? || 
+            ActiveRecord::UnloadAllFixtures::ordered_active_record_table_names.empty?
+          klasses = ActiveRecord::Base.send(:subclasses).reject{ |klass| klass.skip_unload_fixtures if klass.respond_to?(:skip_unload_fixtures) }
+          ActiveRecord::UnloadAllFixtures::ordered_active_record_table_names = klasses.map do |klass|
+            if defined?(ActiveRecord::WormTable) && klass.ancestors.include?(ActiveRecord::WormTable)
+              [klass.switch_table_name] + klass.table_version_names
+            else
+              klass.table_name
+            end
+          end.flatten.to_set.to_a
         end
         
-        Spec::Scenarios::table_name_set = ActiveRecord::Base::connection.tables.to_set
+        ActiveRecord::UnloadAllFixtures::table_name_set = ActiveRecord::Base::connection.tables.to_set
 
         # start with the last successful delete ordering, only re-ordering if new foreign key dependencies are found
-        Spec::Scenarios::ordered_active_record_classes = unload_fixtures( Spec::Scenarios::ordered_active_record_classes, ActiveRecord::Base.connection.open_transactions == 0 )
+        ActiveRecord::Base::without_foreign_key_checks do
+          ActiveRecord::UnloadAllFixtures::ordered_active_record_table_names = delete_rows( ActiveRecord::UnloadAllFixtures::ordered_active_record_table_names, 
+                                                                            ActiveRecord::Base.connection.open_transactions == 0 )
+        end
+        
         true
       end
 
-      def unload_fixtures(classes, truncate=false)
+      def delete_rows(table_names, truncate=false, shift_counter=table_names.size)
         processed = []
-        classes.each_with_index{ |c,i|
-          if defined?(ActiveRecord::WormTable) && c.ancestors.include?(ActiveRecord::WormTable)
-            tables = [c.switch_table_name] + c.table_version_names
-          else
-            tables = [c.table_name]
-          end
-
+        table_names.each_with_index{ |table_name,i|
           begin
-            tables.each do |table_name|
-              if table_name_set.include?(table_name)
-                if truncate
-                  ActiveRecord::Base.connection.execute("truncate table #{table_name}")
-                else
-                  ActiveRecord::Base.connection.execute("delete from #{table_name}")
-                end
+            if ActiveRecord::UnloadAllFixtures::table_name_set.include?(table_name)
+              if truncate
+                ActiveRecord::Base.connection.execute("truncate table #{table_name}")
+              else
+                ActiveRecord::Base.connection.execute("delete from #{table_name}")
               end
             end
-            processed << c
-          rescue
-            raise "can't remove all tables. tables remaining: #{classes.map(&:table_name).join(', ')}" unless i>0
-            processed += unload_fixtures( classes[i..-1].reverse )
+            processed << table_name
+          rescue Exception=>e
+            $stderr << e.message << "\n"
+            $stderr << e.backtrace << "\n"
+            remaining = table_names[i..-1]
+            raise "can't remove all tables. tables remaining: #{remaining.join(', ')}" unless shift_counter>0
+            processed += delete_rows( remaining.unshift(remaining.pop), truncate, shift_counter-1 )
           end
         }
+      end
+    end
+    
+    module MySQL
+      def disable_foreign_key_checks
+        execute "set foreign_key_checks=0"
+      end
+
+      def enable_foreign_key_checks
+        execute "set foreign_key_checks=1"
       end
     end
   end
 end
 
+module JdbcSpec
+  module MySQL
+    include ActiveRecord::UnloadAllFixtures::MySQL
+  end
+end
+
+module ActiveRecord
+  module ConnectionAdapters
+    class AbstractAdapter
+      def disable_foreign_key_checks
+      end
+
+      def enable_foreign_key_checks
+      end
+
+    end
+
+    class MysqlAdapter
+      include ActiveRecord::UnloadAllFixtures::MySQL
+    end
+  end
+
+  class Base
+    def self.without_foreign_key_checks
+      begin
+        connection.disable_foreign_key_checks
+        yield
+      ensure
+        connection.enable_foreign_key_checks
+      end
+    end
+  end
+end
