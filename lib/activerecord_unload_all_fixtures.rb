@@ -11,7 +11,7 @@ module Spec
       # if we're inside a transaction, use delete, otherwise use truncate
       def unload_all_fixtures() 
         if ordered_active_record_classes.nil? || ordered_active_record_classes.empty?
-          Spec::Scenarios::ordered_active_record_classes = ActiveRecord::Base.send(:subclasses).reject{ |klass| klass.skip_unload_fixtures? if klass.respond_to?(:skip_unload_fixtures?) }
+          Spec::Scenarios::ordered_active_record_classes = ActiveRecord::Base.send(:subclasses).reject{ |klass| klass.skip_unload_fixtures if klass.respond_to?(:skip_unload_fixtures) }
         end
         
         Spec::Scenarios::table_name_set = ActiveRecord::Base::connection.tables.to_set
