@@ -34,7 +34,7 @@ module ActiveRecord
       def activerecord_model_tables
         klasses = ActiveRecord::Base.send(:subclasses).reject{ |klass| klass.skip_unload_fixtures if klass.respond_to?(:skip_unload_fixtures) }
         klasses.map do |klass|
-          if defined?(ActiveRecord::WormTable) && klass.ancestors.include?(ActiveRecord::WormTable)
+          if defined?(ActiveRecord::SnapshotView) && klass.ancestors.include?(ActiveRecord::SnapshotView)
             [klass.switch_table_name] + klass.table_version_names
           else
             klass.table_name

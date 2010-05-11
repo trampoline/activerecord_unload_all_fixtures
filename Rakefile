@@ -10,7 +10,7 @@ begin
     gem.email = "mccraigmccraig@googlemail.com"
     gem.homepage = "http://github.com/trampoline/activerecord_unload_all_fixtures"
     gem.authors = ["mccraig mccraig of the clan mccraig"]
-    gem.add_development_dependency "rspec", ">= 1.2.9"
+    gem.add_development_dependency "rspec", ">= 1.2.8"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
